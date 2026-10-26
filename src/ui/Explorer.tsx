@@ -1,3 +1,4 @@
+import { Chess } from 'chess.js'
 import { useEffect, useState } from 'react'
 import { Chessboard } from 'react-chessboard'
 import { scorePercent, type Edge, type OpeningTree, type Stats } from '../core/tree'
@@ -27,16 +28,26 @@ function resultFor(g: ParsedGame, color: Color) {
 }
 
 export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
-  const [path, setPath] = useState<Edge[]>([])
+  const [path, setPathState] = useState<Edge[]>([])
   const [hovered, setHovered] = useState<Edge | null>(null)
+  /** Aviso cuando se mueve en el tablero una jugada que no aparece en las partidas. */
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const setPath = (update: Edge[] | ((p: Edge[]) => Edge[])) => {
+    setPathState(update)
+    setHovered(null)
+    setNotice(null)
+  }
 
   const node = tree.nodes.get(path.at(-1)?.target ?? tree.rootKey)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return
-      if (e.key === 'ArrowLeft') setPath((p) => p.slice(0, -1))
-      if (e.key === 'Home') setPath([])
+      if (e.key === 'ArrowLeft' || e.key === 'Home') {
+        setPathState((p) => (e.key === 'Home' ? [] : p.slice(0, -1)))
+        setNotice(null)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -51,9 +62,27 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
   const score = scorePercent(node.stats)
   const games = node.gameIndices.map((i) => tree.games[i])
 
-  const go = (edge: Edge) => {
-    setPath((p) => [...p, edge])
-    setHovered(null)
+  const go = (edge: Edge) => setPath((p) => [...p, edge])
+
+  const sideToMove = node.fen.split(' ')[1]
+
+  const onPieceDrop = (from: string, to: string | null): boolean => {
+    if (!to || from === to) return false
+    // Si hay varias coronaciones posibles, se prefiere la de dama.
+    const candidates = moves.filter((m) => m.from === from && m.to === to)
+    const edge = candidates.find((m) => m.san.includes('=Q')) ?? candidates[0]
+    if (edge) {
+      go(edge)
+      return true
+    }
+    let san: string
+    try {
+      san = new Chess(node.fen).move({ from, to, promotion: 'q' }).san
+    } catch {
+      return false // jugada ilegal: la pieza vuelve a su casilla
+    }
+    setNotice(`No hay partidas con ${moveLabel(path.length, san)} en esta posición.`)
+    return false
   }
 
   return (
@@ -64,8 +93,9 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
             options={{
               position: node.fen,
               boardOrientation: color === 'w' ? 'white' : 'black',
-              allowDragging: false,
               showAnimations: true,
+              canDragPiece: ({ piece }) => piece.pieceType[0] === sideToMove,
+              onPieceDrop: ({ sourceSquare, targetSquare }) => onPieceDrop(sourceSquare, targetSquare),
               arrows: arrowEdge
                 ? [{ startSquare: arrowEdge.from, endSquare: arrowEdge.to, color: hovered ? '#2f7de1cc' : '#2f7de166' }]
                 : [],
@@ -80,6 +110,13 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
             ◀ Atrás
           </button>
         </div>
+        {notice ? (
+          <p className="notice" role="status">
+            {notice}
+          </p>
+        ) : (
+          <p className="muted small hint">Podés mover las piezas en el tablero para avanzar.</p>
+        )}
       </div>
 
       <div className="moves-col">
@@ -150,10 +187,11 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
             <table>
               <thead>
                 <tr>
-                  <th>Resultado</th>
+                  <th className="result-head" title="Resultado">
+                    Res.
+                  </th>
                   <th>Rival</th>
                   <th>Torneo</th>
-                  <th>Ronda</th>
                   <th>Fecha</th>
                   <th className="num">Jugadas</th>
                 </tr>
@@ -161,12 +199,15 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
               <tbody>
                 {games.map((g, i) => {
                   const r = resultFor(g, color)
+                  const [rival, rivalElo] = color === 'w' ? [g.black, g.blackElo] : [g.white, g.whiteElo]
                   return (
                     <tr key={i}>
                       <td className={`result ${r.cls}`}>{r.label}</td>
-                      <td>{color === 'w' ? g.black : g.white}</td>
+                      <td>
+                        {rival}
+                        {rivalElo && <span className="muted"> ({rivalElo})</span>}
+                      </td>
                       <td className="muted small">{g.event ?? '—'}</td>
-                      <td className="muted small">{g.round ?? '—'}</td>
                       <td className="muted small nowrap">{g.date ?? '—'}</td>
                       <td className="muted small num">{Math.ceil(g.plies.length / 2)}</td>
                     </tr>

@@ -54,6 +54,11 @@ function headerValue(v: string | undefined): string | undefined {
   return s && !/^[?.-]*$/.test(s) ? s : undefined
 }
 
+function parseElo(v: string | undefined): number | undefined {
+  const n = Number.parseInt(v ?? '', 10)
+  return Number.isFinite(n) && n > 0 ? n : undefined
+}
+
 export function parseGame(raw: RawGame, source: string): ParseOutcome {
   const h = raw.headers
   const setupFen = headerValue(h.FEN)
@@ -92,6 +97,8 @@ export function parseGame(raw: RawGame, source: string): ParseOutcome {
       black: cleanDisplayName(h.Black),
       whiteKey: normalizeName(h.White),
       blackKey: normalizeName(h.Black),
+      whiteElo: parseElo(h.WhiteElo),
+      blackElo: parseElo(h.BlackElo),
       result: normalizeResult(h.Result) ?? normalizeResult(terminator) ?? '*',
       event: headerValue(h.Event),
       round: headerValue(h.Round),

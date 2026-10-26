@@ -88,6 +88,10 @@ describe('parseGame', () => {
     const movetext = '1. e4 {[%eval 0.0]} 1. ... e5 {[%eval 0.12]} 2. Nf3 2. ... \nNc6 3. Bb5 $6 {x}\n    ( 3. d4 )\n3. ... a6 1/2-1/2'
     expect(tokenizeMovetext(movetext)).toEqual(['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6', '1/2-1/2'])
   })
+  it('lee el Elo y lo omite si es 0 o falta', () => {
+    const r = parseGame({ headers: { WhiteElo: '1615', BlackElo: '0' }, movetext: '1. e4' }, 'x')
+    expect(r.ok && [r.game.whiteElo, r.game.blackElo]).toEqual([1615, undefined])
+  })
   it('descarta partidas sin jugadas', () => {
     expect(parseGame({ headers: { Result: '1-0' }, movetext: '1-0' }, 'x')).toEqual({ ok: false, reason: 'sin-jugadas' })
   })

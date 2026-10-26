@@ -315,6 +315,18 @@ main {
   margin-top: 0.5rem;
 }
 
+.notice,
+.hint {
+  margin: 0.5rem 0 0;
+}
+
+.notice {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border-left: 3px solid var(--loss);
+  background: var(--bg);
+}
+
 .breadcrumb {
   display: flex;
   flex-wrap: wrap;
@@ -416,6 +428,12 @@ table {
   border-bottom: 1px solid var(--border);
 }
 
+.games th.result-head {
+  width: 1%;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .games th.num {
   text-align: right;
 }
@@ -431,7 +449,7 @@ table {
 
 .result {
   font-weight: 700;
-  width: 2rem;
+  width: 1%;
   text-align: center;
 }
 

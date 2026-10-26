@@ -18,6 +18,9 @@ export interface ParsedGame {
   black: string
   whiteKey: string
   blackKey: string
+  /** Ausente si el PGN no lo trae o vale 0. */
+  whiteElo?: number
+  blackElo?: number
   result: Result
   event?: string
   round?: string
