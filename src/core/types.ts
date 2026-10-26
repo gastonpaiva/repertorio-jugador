@@ -1,0 +1,39 @@
+export type Result = '1-0' | '0-1' | '1/2-1/2' | '*'
+
+export type Color = 'w' | 'b'
+
+/** Una jugada ya validada por chess.js. */
+export interface Ply {
+  san: string
+  from: string
+  to: string
+  /** FEN completo de la posición resultante (para el tablero). */
+  fen: string
+  /** FEN sin contadores de jugadas: identifica la posición (agrupa transposiciones). */
+  key: string
+}
+
+export interface ParsedGame {
+  white: string
+  black: string
+  whiteKey: string
+  blackKey: string
+  result: Result
+  event?: string
+  round?: string
+  date?: string
+  plies: Ply[]
+  /** Archivo de origen. */
+  source: string
+  /** Presente si el texto de jugadas tenía algo inválido y se truncó. */
+  warning?: string
+}
+
+export type DiscardReason = 'sin-jugadas' | 'posicion-inicial' | 'duplicada'
+
+export interface ImportReport {
+  read: number
+  valid: number
+  discarded: Record<DiscardReason, number>
+  warnings: { source: string; white: string; black: string; message: string }[]
+}
