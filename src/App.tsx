@@ -127,7 +127,7 @@ export default function App() {
           ) : (
             <div className="empty-state muted">
               {collections.length === 0
-                ? 'Empezá subiendo un PGN y guardándolo como colección.'
+                ? 'Empezá cargando un PGN como colección.'
                 : games.length === 0
                   ? 'Activá al menos una colección con partidas.'
                   : 'Elegí un jugador de la lista.'}

@@ -51,7 +51,7 @@ export function Library({ collections, activeIds, onToggle, onCreate, onUpdate, 
           onChange={(e) => setName(e.target.value)}
         />
         <button type="submit" disabled={pending.length === 0 || name.trim() === ''}>
-          Guardar {pending.length > 0 && `(${pending.length} archivo${pending.length > 1 ? 's' : ''})`}
+          Cargar {pending.length > 0 && `(${pending.length} archivo${pending.length > 1 ? 's' : ''})`}
         </button>
       </form>
 
