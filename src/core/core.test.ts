@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decodePgnBytes } from './decode'
+import { decodeGameHash, encodeGameHash, toSharedGame } from './gameLink'
 import { importGames } from './importGames'
 import { normalizeName } from './names'
 import { parseGame, positionKey, tokenizeMovetext } from './parseGame'
@@ -153,5 +154,19 @@ describe('players y árbol', () => {
     const tree = buildTree(t, normalizeName('A, B'), 'w')
     const target = positionKey(t[0].plies[2].fen)
     expect(tree.nodes.get(target)!.stats.games).toBe(2)
+  })
+})
+
+describe('gameLink', () => {
+  it('ida y vuelta conserva acentos, Elo y jugadas', () => {
+    const { games } = importGames([{ name: 'a.pgn', text: SAMPLE }])
+    const shared = toSharedGame({ ...games[0], whiteElo: 1615 }, 3, 'b')
+    const decoded = decodeGameHash(encodeGameHash(shared))
+    expect(decoded).toEqual(shared)
+    expect(decoded?.white).toBe('Pérez, Juan')
+  })
+  it('ignora hashes que no son de partida o están rotos', () => {
+    expect(decodeGameHash('')).toBeNull()
+    expect(decodeGameHash('#partida=%%%')).toBeNull()
   })
 })

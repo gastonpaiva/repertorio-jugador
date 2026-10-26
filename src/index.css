@@ -353,6 +353,10 @@ table {
   border-bottom: 1px solid var(--border);
 }
 
+.moves th.num {
+  text-align: right;
+}
+
 .moves td {
   padding: 0.4rem 0.5rem;
   border-bottom: 1px solid var(--border);
@@ -442,6 +446,14 @@ table {
   white-space: nowrap;
 }
 
+.games tbody tr {
+  cursor: pointer;
+}
+
+.games tbody tr:hover {
+  background: var(--accent-soft);
+}
+
 .games td {
   padding: 0.25rem 0.5rem;
   border-bottom: 1px solid var(--border);
@@ -463,4 +475,63 @@ table {
 
 .result.draw {
   color: var(--muted);
+}
+
+.viewer {
+  display: grid;
+  grid-template-columns: minmax(260px, 520px) 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .viewer {
+    grid-template-columns: 1fr;
+  }
+}
+
+.move-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 75vh;
+  overflow-y: auto;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  columns: 2 12rem;
+}
+
+.move-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  padding: 0.1rem 0;
+  break-inside: avoid;
+}
+
+.move-no {
+  width: 2.5rem;
+  text-align: right;
+  color: var(--muted);
+}
+
+.move {
+  border: none;
+  background: none;
+  padding: 0.1rem 0.4rem;
+  min-width: 4.5rem;
+  text-align: left;
+}
+
+.move:hover {
+  background: var(--bg);
+}
+
+.move.current {
+  background: var(--accent);
+  color: #fff;
+}
+
+.final-result {
+  font-weight: 700;
+  padding-left: 2.75rem !important;
 }

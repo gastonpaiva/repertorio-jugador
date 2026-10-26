@@ -1,6 +1,7 @@
 import { Chess } from 'chess.js'
 import { useEffect, useState } from 'react'
 import { Chessboard } from 'react-chessboard'
+import { encodeGameHash, toSharedGame } from '../core/gameLink'
 import { scorePercent, type Edge, type OpeningTree, type Stats } from '../core/tree'
 import type { Color, ParsedGame } from '../core/types'
 
@@ -63,6 +64,11 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
   const games = node.gameIndices.map((i) => tree.games[i])
 
   const go = (edge: Edge) => setPath((p) => [...p, edge])
+
+  const openGame = (g: ParsedGame) => {
+    const { pathname, search } = window.location
+    window.open(pathname + search + encodeGameHash(toSharedGame(g, path.length, color)), '_blank', 'noopener')
+  }
 
   const sideToMove = node.fen.split(' ')[1]
 
@@ -201,7 +207,7 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
                   const r = resultFor(g, color)
                   const [rival, rivalElo] = color === 'w' ? [g.black, g.blackElo] : [g.white, g.whiteElo]
                   return (
-                    <tr key={i}>
+                    <tr key={i} onClick={() => openGame(g)} title="Ver la partida completa en otra pestaña">
                       <td className={`result ${r.cls}`}>{r.label}</td>
                       <td>
                         {rival}
