@@ -84,6 +84,10 @@ describe('parseGame', () => {
   it('ignora comentarios, variantes y NAGs', () => {
     expect(tokenizeMovetext('1. e4 {x} e5 (1... c5 2. Nf3) 2. Nf3 $14 Nc6!?')).toEqual(['e4', 'e5', 'Nf3', 'Nc6!?'])
   })
+  it('acepta el formato "1. ... e5" de los estudios de Lichess', () => {
+    const movetext = '1. e4 {[%eval 0.0]} 1. ... e5 {[%eval 0.12]} 2. Nf3 2. ... \nNc6 3. Bb5 $6 {x}\n    ( 3. d4 )\n3. ... a6 1/2-1/2'
+    expect(tokenizeMovetext(movetext)).toEqual(['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'a6', '1/2-1/2'])
+  })
   it('descarta partidas sin jugadas', () => {
     expect(parseGame({ headers: { Result: '1-0' }, movetext: '1-0' }, 'x')).toEqual({ ok: false, reason: 'sin-jugadas' })
   })
@@ -125,7 +129,7 @@ describe('players y árbol', () => {
   })
 
   it('arma estadísticas desde el punto de vista del jugador', () => {
-    const tree = buildTree(games, juan, 'w', 40)
+    const tree = buildTree(games, juan, 'w')
     const root = tree.nodes.get(tree.rootKey)!
     expect(root.stats).toMatchObject({ games: 2, win: 1, loss: 1, draw: 0 })
     const e4 = root.children.get('e4')!
@@ -134,7 +138,7 @@ describe('players y árbol', () => {
     expect([...afterNf3.children.keys()]).toEqual(['Nf3'])
     expect(scorePercent(root.stats)).toBe(50)
 
-    const black = buildTree(games, juan, 'b', 40)
+    const black = buildTree(games, juan, 'b')
     expect(black.nodes.get(black.rootKey)!.stats).toMatchObject({ games: 1, draw: 1 })
   })
 
@@ -142,13 +146,8 @@ describe('players y árbol', () => {
     const { games: t } = importGames([
       { name: 't.pgn', text: '[White "A, B"]\n\n1. Nf3 d5 2. d4 1-0\n\n[White "A, B"]\n\n1. d4 d5 2. Nf3 0-1\n' },
     ])
-    const tree = buildTree(t, normalizeName('A, B'), 'w', 40)
+    const tree = buildTree(t, normalizeName('A, B'), 'w')
     const target = positionKey(t[0].plies[2].fen)
     expect(tree.nodes.get(target)!.stats.games).toBe(2)
-  })
-
-  it('respeta la profundidad máxima', () => {
-    const tree = buildTree(games, juan, 'w', 1)
-    expect(tree.nodes.size).toBe(2)
   })
 })

@@ -283,17 +283,6 @@ main {
   color: #fff;
 }
 
-.depth {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9em;
-}
-
-.depth input {
-  width: 4.5rem;
-}
-
 .empty-state {
   padding: 3rem 1rem;
   text-align: center;
@@ -405,6 +394,34 @@ table {
 .games summary {
   cursor: pointer;
   color: var(--muted);
+}
+
+.games-list {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.games th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  text-align: left;
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.85em;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.games th.num {
+  text-align: right;
+}
+
+.nowrap {
+  white-space: nowrap;
 }
 
 .games td {

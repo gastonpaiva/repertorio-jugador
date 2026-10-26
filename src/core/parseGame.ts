@@ -45,8 +45,8 @@ export function tokenizeMovetext(movetext: string): string[] {
   }
   return clean
     .split(/\s+/)
-    .map((t) => t.replace(/^\d+\.+/, '')) // "12." "12..." "1.e4"
-    .filter((t) => t !== '' && !t.startsWith('$'))
+    .map((t) => t.replace(/^\d*\.+/, '')) // "12." "12..." "1.e4" y el "..." suelto de "1. ... e5"
+    .filter((t) => t !== '' && !t.startsWith('$') && !/^\d+$/.test(t))
 }
 
 function headerValue(v: string | undefined): string | undefined {

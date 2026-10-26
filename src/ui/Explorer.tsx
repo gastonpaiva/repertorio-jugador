@@ -108,7 +108,7 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
         </p>
 
         {moves.length === 0 ? (
-          <p className="muted">Fin de las partidas registradas (o de la profundidad máxima).</p>
+          <p className="muted">Fin de las partidas registradas.</p>
         ) : (
           <table className="moves">
             <thead>
@@ -146,23 +146,35 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
 
         <details className="games">
           <summary>Partidas que pasaron por esta posición ({games.length})</summary>
-          <table>
-            <tbody>
-              {games.slice(0, 200).map((g, i) => {
-                const r = resultFor(g, color)
-                return (
-                  <tr key={i}>
-                    <td className={`result ${r.cls}`}>{r.label}</td>
-                    <td>vs {color === 'w' ? g.black : g.white}</td>
-                    <td className="muted small">
-                      {[g.event, g.round && `R${g.round}`, g.date].filter(Boolean).join(' · ')}
-                    </td>
-                    <td className="muted small">{g.plies.length} ½j</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div className="games-list">
+            <table>
+              <thead>
+                <tr>
+                  <th>Resultado</th>
+                  <th>Rival</th>
+                  <th>Torneo</th>
+                  <th>Ronda</th>
+                  <th>Fecha</th>
+                  <th className="num">Jugadas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {games.map((g, i) => {
+                  const r = resultFor(g, color)
+                  return (
+                    <tr key={i}>
+                      <td className={`result ${r.cls}`}>{r.label}</td>
+                      <td>{color === 'w' ? g.black : g.white}</td>
+                      <td className="muted small">{g.event ?? '—'}</td>
+                      <td className="muted small">{g.round ?? '—'}</td>
+                      <td className="muted small nowrap">{g.date ?? '—'}</td>
+                      <td className="muted small num">{Math.ceil(g.plies.length / 2)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </details>
       </div>
     </div>

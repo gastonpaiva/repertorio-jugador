@@ -31,7 +31,6 @@ export default function App() {
   const [activeIds, setActiveIds] = useState<Set<string> | null>(null)
   const [playerKey, setPlayerKey] = useState<string | null>(() => loadPref('player', null))
   const [color, setColor] = useState<Color>(() => loadPref('color', 'w'))
-  const [maxMoves, setMaxMoves] = useState<number>(() => loadPref('maxMoves', 20))
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -49,7 +48,6 @@ export default function App() {
   }, [activeIds])
   useEffect(() => savePref('player', playerKey), [playerKey])
   useEffect(() => savePref('color', color), [color])
-  useEffect(() => savePref('maxMoves', maxMoves), [maxMoves])
 
   const active = activeIds ?? new Set<string>()
   const { games, report } = useMemo(
@@ -59,8 +57,8 @@ export default function App() {
   const players = useMemo(() => collectPlayers(games), [games])
   const player = players.find((p) => p.key === playerKey) ?? null
   const tree = useMemo(
-    () => (player ? buildTree(games, player.key, color, maxMoves * 2) : null),
-    [games, player, color, maxMoves],
+    () => (player ? buildTree(games, player.key, color) : null),
+    [games, player, color],
   )
 
   const toggle = (id: string) =>
@@ -123,19 +121,8 @@ export default function App() {
                     Con negras ({player.asBlack})
                   </button>
                 </div>
-                <label className="depth">
-                  Profundidad
-                  <input
-                    type="number"
-                    min={1}
-                    max={60}
-                    value={maxMoves}
-                    onChange={(e) => setMaxMoves(Math.max(1, Math.min(60, Number(e.target.value) || 1)))}
-                  />
-                  jugadas
-                </label>
               </div>
-              <Explorer key={`${player.key}|${color}|${maxMoves}`} tree={tree} color={color} />
+              <Explorer key={`${player.key}|${color}`} tree={tree} color={color} />
             </>
           ) : (
             <div className="empty-state muted">

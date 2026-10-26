@@ -57,7 +57,7 @@ export function playerGames(games: ParsedGame[], playerKey: string, color: Color
  * de vista del jugador. Las transposiciones caen en el mismo nodo; una partida
  * cuenta una sola vez por nodo y por jugada aunque repita la posición.
  */
-export function buildTree(games: ParsedGame[], playerKey: string, color: Color, maxPlies: number): OpeningTree {
+export function buildTree(games: ParsedGame[], playerKey: string, color: Color): OpeningTree {
   const own = playerGames(games, playerKey, color)
   const rootKey = positionKey(DEFAULT_POSITION)
   const nodes = new Map<string, TreeNode>()
@@ -85,7 +85,7 @@ export function buildTree(games: ParsedGame[], playerKey: string, color: Color, 
 
     let current = nodeFor(rootKey, DEFAULT_POSITION)
     visit(current)
-    for (const ply of game.plies.slice(0, maxPlies)) {
+    for (const ply of game.plies) {
       const next = nodeFor(ply.key, ply.fen)
       const edgeId = `${current.key}|${ply.san}`
       let edge = current.children.get(ply.san)
