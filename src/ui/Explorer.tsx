@@ -153,38 +153,40 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
         {moves.length === 0 ? (
           <p className="muted">Fin de las partidas registradas.</p>
         ) : (
-          <table className="moves">
-            <thead>
-              <tr>
-                <th>Jugada</th>
-                <th className="num">Partidas</th>
-                <th className="num">Puntaje</th>
-                <th>+ / = / −</th>
-              </tr>
-            </thead>
-            <tbody>
-              {moves.map((m) => {
-                const sc = scorePercent(m)
-                return (
-                  <tr
-                    key={m.san}
-                    onClick={() => go(m)}
-                    onMouseEnter={() => setHovered(m)}
-                    onMouseLeave={() => setHovered(null)}
-                  >
-                    <td className="san">{moveLabel(path.length, m.san)}</td>
-                    <td className="num">
-                      {m.games} <span className="muted small">({((m.games / node.stats.games) * 100).toFixed(0)}%)</span>
-                    </td>
-                    <td className="num">{sc === null ? '—' : `${sc.toFixed(0)}%`}</td>
-                    <td>
-                      <StatsBar s={m} />
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table className="moves">
+              <thead>
+                <tr>
+                  <th>Jugada</th>
+                  <th className="num">Partidas</th>
+                  <th className="num">Puntaje</th>
+                  <th>+ / = / −</th>
+                </tr>
+              </thead>
+              <tbody>
+                {moves.map((m) => {
+                  const sc = scorePercent(m)
+                  return (
+                    <tr
+                      key={m.san}
+                      onClick={() => go(m)}
+                      onMouseEnter={() => setHovered(m)}
+                      onMouseLeave={() => setHovered(null)}
+                    >
+                      <td className="san">{moveLabel(path.length, m.san)}</td>
+                      <td className="num">
+                        {m.games} <span className="muted small">({((m.games / node.stats.games) * 100).toFixed(0)}%)</span>
+                      </td>
+                      <td className="num">{sc === null ? '—' : `${sc.toFixed(0)}%`}</td>
+                      <td>
+                        <StatsBar s={m} />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <details className="games">

@@ -91,7 +91,7 @@ export function GameViewer({ game }: { game: SharedGame }) {
               ⏭
             </button>
           </div>
-          <p className="muted small hint">También podés usar las flechas ← → del teclado.</p>
+          <p className="muted small hint keyboard-hint">También podés usar las flechas ← → del teclado.</p>
         </div>
 
         <ol className="move-list">

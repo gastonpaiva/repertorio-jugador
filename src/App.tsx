@@ -61,6 +61,14 @@ export default function App() {
     [games, player, color],
   )
 
+  // En pantallas angostas el explorador queda debajo de todo: se lleva la vista hasta él.
+  const selectPlayer = (key: string) => {
+    setPlayerKey(key)
+    if (window.matchMedia('(max-width: 860px)').matches) {
+      requestAnimationFrame(() => document.querySelector('main')?.scrollIntoView({ behavior: 'smooth' }))
+    }
+  }
+
   const toggle = (id: string) =>
     setActiveIds((prev) => {
       const next = new Set(prev)
@@ -105,7 +113,7 @@ export default function App() {
             onDelete={remove}
           />
           <ImportSummary report={report} />
-          <PlayerPicker players={players} selected={player?.key ?? null} onSelect={setPlayerKey} />
+          <PlayerPicker players={players} selected={player?.key ?? null} onSelect={selectPlayer} />
         </aside>
 
         <main>

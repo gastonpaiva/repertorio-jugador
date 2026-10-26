@@ -220,6 +220,17 @@ main {
   font-variant-numeric: tabular-nums;
 }
 
+.sort {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.tabs.small button {
+  padding: 0.15rem 0.6rem;
+}
+
 .players {
   margin-top: 0.5rem;
   max-height: 45vh;
@@ -385,7 +396,7 @@ table {
 .bar {
   display: flex;
   height: 0.8rem;
-  min-width: 100px;
+  min-width: 60px;
   border-radius: 3px;
   overflow: hidden;
   background: var(--border);
@@ -534,4 +545,56 @@ table {
 .final-result {
   font-weight: 700;
   padding-left: 2.75rem !important;
+}
+
+/* Celulares: que nada empuje la página más ancha que la pantalla. */
+.layout > *,
+.explorer > *,
+.viewer > * {
+  min-width: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+@media (hover: none) {
+  .keyboard-hint {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .app {
+    padding-inline: 0.75rem;
+  }
+
+  main,
+  .panel {
+    padding: 0.75rem;
+  }
+
+  h1 {
+    font-size: 1.15rem;
+  }
+
+  .toolbar {
+    gap: 0.5rem;
+  }
+
+  .moves td,
+  .moves th,
+  .games td,
+  .games th {
+    padding-inline: 0.3rem;
+  }
+
+  .games td,
+  .moves td {
+    font-size: 0.9em;
+  }
+
+  .move-list {
+    max-height: none;
+  }
 }
