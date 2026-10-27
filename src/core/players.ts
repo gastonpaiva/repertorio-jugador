@@ -36,3 +36,15 @@ export function collectPlayers(games: ParsedGame[]): PlayerSummary[] {
     }))
     .sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
 }
+
+/**
+ * Jugador al que pertenece un PGN descargado de la búsqueda de partidas: el que
+ * aparece en más de la mitad de las partidas. null si no hay uno claro.
+ */
+export function findSearchedPlayer(games: ParsedGame[]): PlayerSummary | null {
+  const top = collectPlayers(games).reduce<PlayerSummary | null>(
+    (best, p) => (!best || p.asWhite + p.asBlack > best.asWhite + best.asBlack ? p : best),
+    null,
+  )
+  return top && (top.asWhite + top.asBlack) * 2 > games.length ? top : null
+}

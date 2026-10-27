@@ -4,10 +4,17 @@ import { importGames, type PgnFile } from './core/importGames'
 import { collectPlayers } from './core/players'
 import { buildTree } from './core/tree'
 import type { Color } from './core/types'
+import { LangSwitch, useT } from './i18n'
 import { Explorer } from './ui/Explorer'
+import { GuidedImport } from './ui/GuidedImport'
 import { ImportSummary } from './ui/ImportSummary'
 import { Library } from './ui/Library'
+import { LocalUpload } from './ui/LocalUpload'
 import { PlayerPicker } from './ui/PlayerPicker'
+
+// Donaciones: link de pago de Mercado Pago (Uruguay, $ 50 UYU) y Ko-fi (PayPal, cualquier país).
+const MERCADO_PAGO_URL = 'https://mpago.la/2Q2qiHK'
+const KOFI_URL = 'https://ko-fi.com/U7R229LJ5W'
 
 function loadPref<T>(key: string, fallback: T): T {
   try {
@@ -31,7 +38,8 @@ export default function App() {
   const [activeIds, setActiveIds] = useState<Set<string> | null>(null)
   const [playerKey, setPlayerKey] = useState<string | null>(() => loadPref('player', null))
   const [color, setColor] = useState<Color>(() => loadPref('color', 'w'))
-  const [error, setError] = useState<string | null>(null)
+  const [storageError, setStorageError] = useState(false)
+  const t = useT()
 
   useEffect(() => {
     listCollections()
@@ -40,12 +48,15 @@ export default function App() {
         const stored = loadPref<string[] | null>('activeCollections', null)
         setActiveIds(new Set(stored ?? list.map((c) => c.id)))
       })
-      .catch(() => setError('No se pudo abrir el almacenamiento del navegador; las colecciones no se guardarán.'))
+      .catch(() => setStorageError(true))
   }, [])
 
   useEffect(() => {
     if (activeIds) savePref('activeCollections', [...activeIds])
   }, [activeIds])
+  useEffect(() => {
+    document.title = t.app.title
+  }, [t])
   useEffect(() => savePref('player', playerKey), [playerKey])
   useEffect(() => savePref('color', color), [color])
 
@@ -96,19 +107,26 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
-        <h1>Repertorio de jugador</h1>
-        <p className="muted">Árbol de aperturas a partir de PGN de Chess-Results. Todo queda en tu navegador.</p>
+      <header className="app-header">
+        <div>
+          <h1>{t.app.title}</h1>
+          <p className="muted">{t.app.subtitle}</p>
+        </div>
+        <LangSwitch />
       </header>
-      {error && <p className="error">{error}</p>}
+      {storageError && <p className="error">{t.app.storageError}</p>}
 
       <div className="layout">
         <aside>
+          <section className="panel">
+            <h2>{t.app.addGames}</h2>
+            <GuidedImport onCreate={create} onSelectPlayer={selectPlayer} />
+            <LocalUpload onCreate={create} />
+          </section>
           <Library
             collections={collections}
             activeIds={active}
             onToggle={toggle}
-            onCreate={create}
             onUpdate={update}
             onDelete={remove}
           />
@@ -123,10 +141,10 @@ export default function App() {
                 <h2>{player.name}</h2>
                 <div className="tabs" role="tablist">
                   <button type="button" role="tab" aria-selected={color === 'w'} onClick={() => setColor('w')}>
-                    Con blancas ({player.asWhite})
+                    {t.app.withWhite(player.asWhite)}
                   </button>
                   <button type="button" role="tab" aria-selected={color === 'b'} onClick={() => setColor('b')}>
-                    Con negras ({player.asBlack})
+                    {t.app.withBlack(player.asBlack)}
                   </button>
                 </div>
               </div>
@@ -135,14 +153,26 @@ export default function App() {
           ) : (
             <div className="empty-state muted">
               {collections.length === 0
-                ? 'Empezá cargando un PGN como colección.'
+                ? t.app.emptyNoCollections
                 : games.length === 0
-                  ? 'Activá al menos una colección con partidas.'
-                  : 'Elegí un jugador de la lista.'}
+                  ? t.app.emptyNoGames
+                  : t.app.emptyPickPlayer}
             </div>
           )}
         </main>
       </div>
+
+      <footer className="donate">
+        <p className="muted small">{t.app.donateText}</p>
+        <div className={`donate-links${t.app.kofiFirst ? ' reverse' : ''}`}>
+          <a className="button" href={MERCADO_PAGO_URL} target="_blank" rel="noopener noreferrer">
+            {t.app.donateMercadoPago}
+          </a>
+          <a className="button kofi" href={KOFI_URL} target="_blank" rel="noopener noreferrer">
+            {t.app.donateKofi}
+          </a>
+        </div>
+      </footer>
     </div>
   )
 }

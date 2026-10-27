@@ -2,6 +2,7 @@ import { Chess } from 'chess.js'
 import { useEffect, useMemo, useState } from 'react'
 import { Chessboard } from 'react-chessboard'
 import type { SharedGame } from '../core/gameLink'
+import { useT } from '../i18n'
 
 const RESULT_LABEL: Record<SharedGame['result'], string> = {
   '1-0': '1-0',
@@ -13,6 +14,7 @@ const RESULT_LABEL: Record<SharedGame['result'], string> = {
 const withElo = (name: string, elo?: number) => (elo ? `${name} (${elo})` : name)
 
 export function GameViewer({ game }: { game: SharedGame }) {
+  const t = useT()
   const positions = useMemo(() => {
     const chess = new Chess()
     const list = [{ fen: chess.fen(), from: '', to: '' }]
@@ -61,7 +63,7 @@ export function GameViewer({ game }: { game: SharedGame }) {
         </h1>
         <p className="muted">
           <strong>{RESULT_LABEL[game.result]}</strong>
-          {[game.event, game.round && `Ronda ${game.round}`, game.date].filter(Boolean).map((t) => ` · ${t}`)}
+          {[game.event, game.round && t.viewer.round(game.round), game.date].filter(Boolean).map((t) => ` · ${t}`)}
         </p>
       </header>
 
@@ -91,7 +93,7 @@ export function GameViewer({ game }: { game: SharedGame }) {
               ⏭
             </button>
           </div>
-          <p className="muted small hint keyboard-hint">También podés usar las flechas ← → del teclado.</p>
+          <p className="muted small hint keyboard-hint">{t.viewer.keyboardHint}</p>
         </div>
 
         <ol className="move-list">

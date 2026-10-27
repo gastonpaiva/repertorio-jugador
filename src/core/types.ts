@@ -29,7 +29,16 @@ export interface ParsedGame {
   /** Archivo de origen. */
   source: string
   /** Presente si el texto de jugadas tenía algo inválido y se truncó. */
-  warning?: string
+  warning?: InvalidMove
+}
+
+/** Jugada que chess.js no pudo aplicar; la partida se cortó ahí. El texto lo arma la interfaz. */
+export interface InvalidMove {
+  token: string
+  /** Número de jugada (1, 2, ...). */
+  move: number
+  /** Medias jugadas válidas que se conservaron. */
+  kept: number
 }
 
 export type DiscardReason = 'sin-jugadas' | 'posicion-inicial' | 'duplicada'
@@ -38,5 +47,5 @@ export interface ImportReport {
   read: number
   valid: number
   discarded: Record<DiscardReason, number>
-  warnings: { source: string; white: string; black: string; message: string }[]
+  warnings: { source: string; white: string; black: string; warning: InvalidMove }[]
 }

@@ -43,7 +43,7 @@ export function importGames(files: PgnFile[]): { games: ParsedGame[]; report: Im
       seen.add(key)
       games.push(game)
       if (game.warning) {
-        report.warnings.push({ source: file.name, white: game.white, black: game.black, message: game.warning })
+        report.warnings.push({ source: file.name, white: game.white, black: game.black, warning: game.warning })
       }
     }
   }

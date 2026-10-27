@@ -1,62 +1,23 @@
 import { useRef, useState } from 'react'
-import { decodePgnBytes } from '../core/decode'
 import type { Collection } from '../core/db'
-import type { PgnFile } from '../core/importGames'
-
-async function readFiles(list: FileList | null): Promise<PgnFile[]> {
-  if (!list) return []
-  return Promise.all(
-    [...list].map(async (f) => ({ name: f.name, text: decodePgnBytes(await f.arrayBuffer()) })),
-  )
-}
+import { useT } from '../i18n'
+import { readFiles } from './readFiles'
 
 interface Props {
   collections: Collection[]
   activeIds: Set<string>
   onToggle: (id: string) => void
-  onCreate: (name: string, files: PgnFile[]) => Promise<void>
   onUpdate: (c: Collection) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }
 
-export function Library({ collections, activeIds, onToggle, onCreate, onUpdate, onDelete }: Props) {
-  const [pending, setPending] = useState<PgnFile[]>([])
-  const [name, setName] = useState('')
-  const fileInput = useRef<HTMLInputElement>(null)
-
-  const pick = async (list: FileList | null) => {
-    const files = await readFiles(list)
-    setPending(files)
-    if (files.length > 0 && name.trim() === '') setName(files[0].name.replace(/\.pgn$/i, ''))
-  }
-
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (pending.length === 0 || name.trim() === '') return
-    await onCreate(name, pending)
-    setPending([])
-    setName('')
-    if (fileInput.current) fileInput.current.value = ''
-  }
-
+export function Library({ collections, activeIds, onToggle, onUpdate, onDelete }: Props) {
+  const t = useT()
   return (
     <section className="panel">
-      <h2>Colecciones</h2>
-      <form className="upload" onSubmit={save}>
-        <input ref={fileInput} type="file" accept=".pgn,text/plain" multiple onChange={(e) => pick(e.target.files)} />
-        <input
-          type="text"
-          placeholder="Nombre de la colección"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button type="submit" disabled={pending.length === 0 || name.trim() === ''}>
-          Cargar {pending.length > 0 && `(${pending.length} archivo${pending.length > 1 ? 's' : ''})`}
-        </button>
-      </form>
-
+      <h2>{t.library.title}</h2>
       {collections.length === 0 ? (
-        <p className="muted">Todavía no hay colecciones. Subí uno o más PGN de Chess-Results y ponele un nombre.</p>
+        <p className="muted">{t.library.empty}</p>
       ) : (
         <ul className="collections">
           {collections.map((c) => (
@@ -88,6 +49,7 @@ function CollectionRow({
   onUpdate: (c: Collection) => Promise<void>
   onDelete: () => void
 }) {
+  const t = useT()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(collection.name)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -128,29 +90,29 @@ function CollectionRow({
         )}
       </label>
       <div className="collection-meta muted" title={collection.files.map((f) => f.name).join('\n')}>
-        {collection.files.length} archivo{collection.files.length !== 1 && 's'} ·{' '}
-        {new Date(collection.createdAt).toLocaleDateString('es')}
+        {t.library.files(collection.files.length)} ·{' '}
+        {new Date(collection.createdAt).toLocaleDateString(t.locale)}
       </div>
       <div className="collection-actions">
         <button type="button" className="link" onClick={() => setEditing(true)}>
-          Renombrar
+          {t.library.rename}
         </button>
         <button type="button" className="link" onClick={() => addInput.current?.click()}>
-          Agregar PGN
+          {t.library.addPgn}
         </button>
         <input ref={addInput} type="file" accept=".pgn,text/plain" multiple hidden onChange={(e) => addFiles(e.target.files)} />
         {confirmDelete ? (
           <>
             <button type="button" className="link danger" onClick={onDelete}>
-              Confirmar
+              {t.library.confirm}
             </button>
             <button type="button" className="link" onClick={() => setConfirmDelete(false)}>
-              Cancelar
+              {t.library.cancel}
             </button>
           </>
         ) : (
           <button type="button" className="link danger" onClick={() => setConfirmDelete(true)}>
-            Eliminar
+            {t.library.delete}
           </button>
         )}
       </div>

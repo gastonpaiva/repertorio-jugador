@@ -1,7 +1,7 @@
 import { Chess, DEFAULT_POSITION } from 'chess.js'
 import { cleanDisplayName, normalizeName } from './names'
 import type { RawGame } from './splitPgn'
-import type { DiscardReason, ParsedGame, Ply, Result } from './types'
+import type { DiscardReason, InvalidMove, ParsedGame, Ply, Result } from './types'
 
 export type ParseOutcome =
   | { ok: true; game: ParsedGame }
@@ -68,7 +68,7 @@ export function parseGame(raw: RawGame, source: string): ParseOutcome {
 
   const chess = new Chess()
   const plies: Ply[] = []
-  let warning: string | undefined
+  let warning: InvalidMove | undefined
   let terminator: string | undefined
 
   for (const token of tokenizeMovetext(raw.movetext)) {
@@ -82,8 +82,7 @@ export function parseGame(raw: RawGame, source: string): ParseOutcome {
       const fen = chess.fen()
       plies.push({ san: move.san, from: move.from, to: move.to, fen, key: positionKey(fen) })
     } catch {
-      const moveNo = Math.floor(plies.length / 2) + 1
-      warning = `Jugada inválida "${token}" en la jugada ${moveNo}; se usaron las primeras ${plies.length} medias jugadas.`
+      warning = { token, move: Math.floor(plies.length / 2) + 1, kept: plies.length }
       break
     }
   }

@@ -4,16 +4,18 @@ import { Chessboard } from 'react-chessboard'
 import { encodeGameHash, toSharedGame } from '../core/gameLink'
 import { scorePercent, type Edge, type OpeningTree, type Stats } from '../core/tree'
 import type { Color, ParsedGame } from '../core/types'
+import { useT } from '../i18n'
 
 const moveLabel = (plyIndex: number, san: string) =>
   plyIndex % 2 === 0 ? `${plyIndex / 2 + 1}. ${san}` : `${(plyIndex + 1) / 2}… ${san}`
 
 function StatsBar({ s }: { s: Stats }) {
+  const t = useT()
   const decided = s.win + s.draw + s.loss
   if (decided === 0) return <div className="bar empty" />
   const pct = (n: number) => `${(n / decided) * 100}%`
   return (
-    <div className="bar" title={`+${s.win} =${s.draw} −${s.loss}${s.unknown ? ` · ${s.unknown} sin resultado` : ''}`}>
+    <div className="bar" title={`+${s.win} =${s.draw} −${s.loss}${s.unknown ? ` · ${t.explorer.noResult(s.unknown)}` : ''}`}>
       <span className="win" style={{ width: pct(s.win) }} />
       <span className="draw" style={{ width: pct(s.draw) }} />
       <span className="loss" style={{ width: pct(s.loss) }} />
@@ -29,9 +31,10 @@ function resultFor(g: ParsedGame, color: Color) {
 }
 
 export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
+  const t = useT()
   const [path, setPathState] = useState<Edge[]>([])
   const [hovered, setHovered] = useState<Edge | null>(null)
-  /** Aviso cuando se mueve en el tablero una jugada que no aparece en las partidas. */
+  /** Jugada movida en el tablero que no aparece en las partidas, para avisarlo. */
   const [notice, setNotice] = useState<string | null>(null)
 
   const setPath = (update: Edge[] | ((p: Edge[]) => Edge[])) => {
@@ -55,7 +58,7 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
   }, [])
 
   if (!node || node.stats.games === 0) {
-    return <p className="muted">No hay partidas con {color === 'w' ? 'blancas' : 'negras'} para este jugador.</p>
+    return <p className="muted">{t.explorer.noGamesFor(color)}</p>
   }
 
   const moves = [...node.children.values()].sort((a, b) => b.games - a.games)
@@ -87,7 +90,7 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
     } catch {
       return false // jugada ilegal: la pieza vuelve a su casilla
     }
-    setNotice(`No hay partidas con ${moveLabel(path.length, san)} en esta posición.`)
+    setNotice(moveLabel(path.length, san))
     return false
   }
 
@@ -110,25 +113,25 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
         </div>
         <div className="nav">
           <button type="button" onClick={() => setPath([])} disabled={path.length === 0}>
-            ⏮ Inicio
+            {t.explorer.first}
           </button>
           <button type="button" onClick={() => setPath((p) => p.slice(0, -1))} disabled={path.length === 0}>
-            ◀ Atrás
+            {t.explorer.back}
           </button>
         </div>
         {notice ? (
           <p className="notice" role="status">
-            {notice}
+            {t.explorer.notInGames(notice)}
           </p>
         ) : (
-          <p className="muted small hint">Podés mover las piezas en el tablero para avanzar.</p>
+          <p className="muted small hint">{t.explorer.dragHint}</p>
         )}
       </div>
 
       <div className="moves-col">
         <div className="breadcrumb">
           <button type="button" className="link" onClick={() => setPath([])}>
-            Inicio
+            {t.explorer.start}
           </button>
           {path.map((e, i) => (
             <button key={i} type="button" className="link" onClick={() => setPath(path.slice(0, i + 1))}>
@@ -138,11 +141,11 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
         </div>
 
         <p className="position-stats">
-          <strong>{node.stats.games}</strong> partida{node.stats.games !== 1 && 's'} en esta posición
+          <strong>{node.stats.games}</strong> {t.explorer.gamesHere(node.stats.games)}
           {score !== null && (
             <>
               {' '}
-              · puntaje <strong>{score.toFixed(0)}%</strong>
+              · {t.explorer.score} <strong>{score.toFixed(0)}%</strong>
             </>
           )}{' '}
           <span className="muted">
@@ -151,15 +154,15 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
         </p>
 
         {moves.length === 0 ? (
-          <p className="muted">Fin de las partidas registradas.</p>
+          <p className="muted">{t.explorer.endOfGames}</p>
         ) : (
           <div className="table-scroll">
             <table className="moves">
               <thead>
                 <tr>
-                  <th>Jugada</th>
-                  <th className="num">Partidas</th>
-                  <th className="num">Puntaje</th>
+                  <th>{t.explorer.move}</th>
+                  <th className="num">{t.explorer.games}</th>
+                  <th className="num">{t.explorer.scoreCol}</th>
                   <th>+ / = / −</th>
                 </tr>
               </thead>
@@ -190,18 +193,18 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
         )}
 
         <details className="games">
-          <summary>Partidas que pasaron por esta posición ({games.length})</summary>
+          <summary>{t.explorer.gamesThrough(games.length)}</summary>
           <div className="games-list">
             <table>
               <thead>
                 <tr>
-                  <th className="result-head" title="Resultado">
-                    Res.
+                  <th className="result-head" title={t.explorer.result}>
+                    {t.explorer.resultAbbr}
                   </th>
-                  <th>Rival</th>
-                  <th>Torneo</th>
-                  <th>Fecha</th>
-                  <th className="num">Jugadas</th>
+                  <th>{t.explorer.opponent}</th>
+                  <th>{t.explorer.event}</th>
+                  <th>{t.explorer.date}</th>
+                  <th className="num">{t.explorer.moves}</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,7 +212,7 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
                   const r = resultFor(g, color)
                   const [rival, rivalElo] = color === 'w' ? [g.black, g.blackElo] : [g.white, g.whiteElo]
                   return (
-                    <tr key={i} onClick={() => openGame(g)} title="Ver la partida completa en otra pestaña">
+                    <tr key={i} onClick={() => openGame(g)} title={t.explorer.openGame}>
                       <td className={`result ${r.cls}`}>{r.label}</td>
                       <td>
                         {rival}

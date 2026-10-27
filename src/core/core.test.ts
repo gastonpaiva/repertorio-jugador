@@ -4,7 +4,7 @@ import { decodeGameHash, encodeGameHash, toSharedGame } from './gameLink'
 import { importGames } from './importGames'
 import { normalizeName } from './names'
 import { parseGame, positionKey, tokenizeMovetext } from './parseGame'
-import { collectPlayers } from './players'
+import { collectPlayers, findSearchedPlayer } from './players'
 import { splitPgn } from './splitPgn'
 import { buildTree, scorePercent } from './tree'
 
@@ -99,7 +99,7 @@ describe('parseGame', () => {
   it('trunca ante una jugada ilegal y avisa', () => {
     const r = parseGame({ headers: {}, movetext: '1. e4 e5 2. Ke3 Nc6' }, 'x')
     expect(r.ok && r.game.plies.map((p) => p.san)).toEqual(['e4', 'e5'])
-    expect(r.ok && r.game.warning).toMatch(/Ke3/)
+    expect(r.ok && r.game.warning).toEqual({ token: 'Ke3', move: 2, kept: 2 })
   })
   it('toma el resultado del texto si falta la cabecera y acepta 0-0', () => {
     const r = parseGame({ headers: {}, movetext: '1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. 0-0 0-1' }, 'x')
@@ -154,6 +154,17 @@ describe('players y árbol', () => {
     const tree = buildTree(t, normalizeName('A, B'), 'w')
     const target = positionKey(t[0].plies[2].fen)
     expect(tree.nodes.get(target)!.stats.games).toBe(2)
+  })
+})
+
+describe('findSearchedPlayer', () => {
+  it('elige al que juega más de la mitad de las partidas', () => {
+    const { games } = importGames([{ name: 'a.pgn', text: SAMPLE }])
+    expect(findSearchedPlayer(games)?.key).toBe(normalizeName('Perez, Juan'))
+    const { games: mixed } = importGames([
+      { name: 'm.pgn', text: '[White "A, B"]\n[Black "C, D"]\n\n1. e4 1-0\n\n[White "E, F"]\n[Black "G, H"]\n\n1. d4 0-1\n' },
+    ])
+    expect(findSearchedPlayer(mixed)).toBeNull()
   })
 })
 
