@@ -4,7 +4,10 @@ import { Chessboard } from 'react-chessboard'
 import { encodeGameHash, toSharedGame } from '../core/gameLink'
 import { scorePercent, type Edge, type OpeningTree, type Stats } from '../core/tree'
 import type { Color, ParsedGame } from '../core/types'
+import { MAX_LINES, useEngineEnabled, useEngineLines, usePositionAnalysis } from '../engine/hooks'
+import { classifyMove, edgeUci, formatScore, sideToMove, toCp, uciToSan, type Score } from '../engine/score'
 import { useT } from '../i18n'
+import { EngineToggle, EvalBar, Mark } from './EngineUI'
 
 const moveLabel = (plyIndex: number, san: string) =>
   plyIndex % 2 === 0 ? `${plyIndex / 2 + 1}. ${san}` : `${(plyIndex + 1) / 2}… ${san}`
@@ -30,28 +33,59 @@ function resultFor(g: ParsedGame, color: Color) {
   return won ? { label: '1', cls: 'win' } : { label: '0', cls: 'loss' }
 }
 
+/** Jugada de una variante propia: no sale de ninguna partida. */
+interface VariationMove {
+  san: string
+  from: string
+  to: string
+  fen: string
+}
+
+/** Posición actual: jugadas del árbol y, a continuación, la variante propia. */
+interface Nav {
+  path: Edge[]
+  extra: VariationMove[]
+}
+
+const START: Nav = { path: [], extra: [] }
+
+/** Un paso atrás: primero se deshace la variante propia, después el árbol. */
+const stepBack = (n: Nav): Nav =>
+  n.extra.length > 0 ? { ...n, extra: n.extra.slice(0, -1) } : { path: n.path.slice(0, -1), extra: [] }
+
 export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
   const t = useT()
-  const [path, setPathState] = useState<Edge[]>([])
+  const [nav, setNavState] = useState<Nav>(START)
   const [hovered, setHovered] = useState<Edge | null>(null)
-  /** Jugada movida en el tablero que no aparece en las partidas, para avisarlo. */
-  const [notice, setNotice] = useState<string | null>(null)
+  const { path, extra } = nav
 
-  const setPath = (update: Edge[] | ((p: Edge[]) => Edge[])) => {
-    setPathState(update)
+  const setNav = (update: Nav | ((n: Nav) => Nav)) => {
+    setNavState(update)
     setHovered(null)
-    setNotice(null)
   }
+  const setPath = (p: Edge[]) => setNav({ path: p, extra: [] })
 
   const node = tree.nodes.get(path.at(-1)?.target ?? tree.rootKey)
+  const moves = node ? [...node.children.values()].sort((a, b) => b.games - a.games) : []
+  const offBook = extra.length > 0
+  const fen = extra.at(-1)?.fen ?? node?.fen ?? ''
+  /** Índice de la próxima media jugada, para numerar (1. e4, 1… e5). */
+  const ply = path.length + extra.length
+
+  const [engineOn, setEngineOn] = useEngineEnabled()
+  const [lineCount, setLineCount] = useEngineLines()
+  const analysis = usePositionAnalysis(
+    fen,
+    offBook ? [] : moves.map((m) => edgeUci(m.from, m.to, m.san)),
+    engineOn && !!node,
+    lineCount,
+  )
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return
-      if (e.key === 'ArrowLeft' || e.key === 'Home') {
-        setPathState((p) => (e.key === 'Home' ? [] : p.slice(0, -1)))
-        setNotice(null)
-      }
+      if (e.key === 'ArrowLeft') setNavState(stepBack)
+      if (e.key === 'Home') setNavState(START)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -61,70 +95,122 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
     return <p className="muted">{t.explorer.noGamesFor(color)}</p>
   }
 
-  const moves = [...node.children.values()].sort((a, b) => b.games - a.games)
-  const arrowEdge = hovered ?? moves[0]
+  const arrowEdge = offBook ? undefined : (hovered ?? moves[0])
+  const best = analysis.best
+  const mover = sideToMove(fen)
+  // Referencia para marcar errores: la mejor evaluación conocida para quien mueve.
+  const sign = mover === 'w' ? 1 : -1
+  const reference = [best?.score, ...analysis.moves.values()]
+    .filter((s): s is Score => !!s)
+    .reduce<Score | null>((a, s) => (!a || sign * toCp(s) > sign * toCp(a) ? s : a), null)
   const score = scorePercent(node.stats)
   const games = node.gameIndices.map((i) => tree.games[i])
 
-  const go = (edge: Edge) => setPath((p) => [...p, edge])
+  const go = (edge: Edge) => setNav((n) => ({ path: [...n.path, edge], extra: [] }))
 
   const openGame = (g: ParsedGame) => {
     const { pathname, search } = window.location
     window.open(pathname + search + encodeGameHash(toSharedGame(g, path.length, color)), '_blank', 'noopener')
   }
 
-  const sideToMove = node.fen.split(' ')[1]
-
-  const onPieceDrop = (from: string, to: string | null): boolean => {
-    if (!to || from === to) return false
-    // Si hay varias coronaciones posibles, se prefiere la de dama.
-    const candidates = moves.filter((m) => m.from === from && m.to === to)
-    const edge = candidates.find((m) => m.san.includes('=Q')) ?? candidates[0]
-    if (edge) {
-      go(edge)
-      return true
+  /**
+   * Juega una jugada en el tablero: si está en las partidas avanza por el árbol;
+   * si no, la agrega a la variante propia. Devuelve false si es ilegal.
+   */
+  const play = (from: string, to: string, promotion = 'q'): boolean => {
+    if (!offBook) {
+      const candidates = moves.filter((m) => m.from === from && m.to === to)
+      const edge = candidates.find((m) => m.san.includes(`=${promotion.toUpperCase()}`)) ?? candidates[0]
+      if (edge) {
+        go(edge)
+        return true
+      }
     }
-    let san: string
     try {
-      san = new Chess(node.fen).move({ from, to, promotion: 'q' }).san
+      const chess = new Chess(fen)
+      const move = chess.move({ from, to, promotion })
+      setNav((n) => ({ ...n, extra: [...n.extra, { san: move.san, from, to, fen: chess.fen() }] }))
+      return true
     } catch {
       return false // jugada ilegal: la pieza vuelve a su casilla
     }
-    setNotice(moveLabel(path.length, san))
-    return false
   }
 
   return (
     <div className="explorer">
       <div className="board-col">
-        <div className="board">
-          <Chessboard
-            options={{
-              position: node.fen,
-              boardOrientation: color === 'w' ? 'white' : 'black',
-              showAnimations: true,
-              canDragPiece: ({ piece }) => piece.pieceType[0] === sideToMove,
-              onPieceDrop: ({ sourceSquare, targetSquare }) => onPieceDrop(sourceSquare, targetSquare),
-              arrows: arrowEdge
-                ? [{ startSquare: arrowEdge.from, endSquare: arrowEdge.to, color: hovered ? '#2f7de1cc' : '#2f7de166' }]
-                : [],
-            }}
-          />
+        <div className="board-wrap">
+          {engineOn && <EvalBar score={best?.score ?? null} orientation={color} />}
+          <div className="board">
+            <Chessboard
+              options={{
+                position: fen,
+                boardOrientation: color === 'w' ? 'white' : 'black',
+                showAnimations: true,
+                canDragPiece: ({ piece }) => piece.pieceType[0] === mover,
+                onPieceDrop: ({ sourceSquare, targetSquare }) =>
+                  !!targetSquare && sourceSquare !== targetSquare && play(sourceSquare, targetSquare),
+                arrows: [
+                  // La flecha del motor se omite si coincide con la de la jugada resaltada.
+                  ...(best?.pv[0] && best.pv[0].slice(0, 4) !== (arrowEdge ? arrowEdge.from + arrowEdge.to : '')
+                    ? [{ startSquare: best.pv[0].slice(0, 2), endSquare: best.pv[0].slice(2, 4), color: '#3a9d5daa' }]
+                    : []),
+                  ...(arrowEdge
+                    ? [{ startSquare: arrowEdge.from, endSquare: arrowEdge.to, color: hovered ? '#2f7de1cc' : '#2f7de166' }]
+                    : []),
+                ],
+              }}
+            />
+          </div>
         </div>
         <div className="nav">
-          <button type="button" onClick={() => setPath([])} disabled={path.length === 0}>
+          <button type="button" onClick={() => setNav(START)} disabled={ply === 0}>
             {t.explorer.first}
           </button>
-          <button type="button" onClick={() => setPath((p) => p.slice(0, -1))} disabled={path.length === 0}>
+          <button type="button" onClick={() => setNav(stepBack)} disabled={ply === 0}>
             {t.explorer.back}
           </button>
         </div>
-        {notice ? (
-          <p className="notice" role="status">
-            {t.explorer.notInGames(notice)}
-          </p>
-        ) : (
-          <p className="muted small hint">{t.explorer.dragHint}</p>
+        <p className="muted small hint">{t.explorer.dragHint}</p>
+        <EngineToggle
+          on={engineOn}
+          onChange={setEngineOn}
+          status={analysis.status}
+          detail={best ? t.engine.depth(best.depth) : undefined}
+        />
+        {engineOn && (
+          <div className="engine-lines-picker">
+            <span className="muted small">{t.engine.lines}</span>
+            <div className="tabs small" role="group" aria-label={t.engine.lines}>
+              {Array.from({ length: MAX_LINES }, (_, i) => i + 1).map((n) => (
+                <button key={n} type="button" aria-pressed={lineCount === n} onClick={() => setLineCount(n)}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {analysis.lines.length > 0 && (
+          <ol className="engine-lines small">
+            {analysis.lines.map((line) => {
+              const san = uciToSan(fen, line.pv.slice(0, 6))
+              if (san.length === 0) return null
+              const first = line.pv[0]
+              return (
+                <li key={line.multipv}>
+                  <button
+                    type="button"
+                    className="engine-line-button"
+                    title={t.engine.playLine}
+                    onClick={() => play(first.slice(0, 2), first.slice(2, 4), first[4])}
+                  >
+                    <span className="engine-score">{formatScore(line.score)}</span>{' '}
+                    <strong>{moveLabel(ply, san[0])}</strong> <span className="muted">{san.slice(1).join(' ')}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
         )}
       </div>
 
@@ -138,8 +224,30 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
               {i % 2 === 0 ? `${i / 2 + 1}.${e.san}` : e.san}
             </button>
           ))}
+          {extra.map((m, j) => {
+            const i = path.length + j
+            return (
+              <button
+                key={`x${j}`}
+                type="button"
+                className="link off-book"
+                onClick={() => setNav((n) => ({ ...n, extra: n.extra.slice(0, j + 1) }))}
+              >
+                {i % 2 === 0 ? `${i / 2 + 1}.${m.san}` : j === 0 ? `${(i + 1) / 2}…${m.san}` : m.san}
+              </button>
+            )
+          })}
         </div>
 
+        {offBook ? (
+          <div className="off-book-panel">
+            <p>{t.explorer.offBook}</p>
+            <button type="button" onClick={() => setNav((n) => ({ ...n, extra: [] }))}>
+              {t.explorer.backToGames}
+            </button>
+          </div>
+        ) : (
+          <>
         <p className="position-stats">
           <strong>{node.stats.games}</strong> {t.explorer.gamesHere(node.stats.games)}
           {score !== null && (
@@ -164,11 +272,17 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
                   <th className="num">{t.explorer.games}</th>
                   <th className="num">{t.explorer.scoreCol}</th>
                   <th>+ / = / −</th>
+                  {engineOn && (
+                    <th className="num" title={t.engine.evalTitle}>
+                      {t.engine.evalCol}
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {moves.map((m) => {
                   const sc = scorePercent(m)
+                  const ev = analysis.moves.get(edgeUci(m.from, m.to, m.san))
                   return (
                     <tr
                       key={m.san}
@@ -184,6 +298,18 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
                       <td>
                         <StatsBar s={m} />
                       </td>
+                      {engineOn && (
+                        <td className="num eval-cell">
+                          {ev ? (
+                            <>
+                              {formatScore(ev)}
+                              <Mark mark={reference ? classifyMove(reference, ev, mover) : null} />
+                            </>
+                          ) : (
+                            <span className="muted">…</span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   )
                 })}
@@ -228,6 +354,8 @@ export function Explorer({ tree, color }: { tree: OpeningTree; color: Color }) {
             </table>
           </div>
         </details>
+          </>
+        )}
       </div>
     </div>
   )

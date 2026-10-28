@@ -9,6 +9,7 @@ App web que arma el árbol de aperturas de un jugador a partir de archivos PGN d
 - Descarta partidas sin jugadas (incomparecencias, byes) e ignora duplicados entre archivos.
 - Detección de jugadores normalizando acentos, mayúsculas, títulos y el formato "Apellido, Nombre".
 - Explorador de aperturas por posición (FEN, agrupa transposiciones), separado para blancas y negras, con victorias/tablas/derrotas, tablero y lista de partidas.
+- Análisis opcional con Stockfish 19 (versión liviana, corre en el navegador): barra de evaluación, mejor jugada, evaluación de cada jugada del rival con marcas de error (?!, ?, ??) y análisis completo en el visor de partidas.
 
 ## Uso
 
@@ -21,4 +22,4 @@ npm run build   # build de producción en dist/
 
 ## Stack
 
-TypeScript · Vite · React · chess.js · react-chessboard · idb
+TypeScript · Vite · React · chess.js · react-chessboard · idb · Stockfish.js (GPLv3)

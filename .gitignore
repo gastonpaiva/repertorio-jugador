@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Stockfish: lo copia vite.config.ts desde node_modules
+public/stockfish

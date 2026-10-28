@@ -79,10 +79,11 @@ const es = {
   explorer: {
     noResult: (n: number) => `${n} sin resultado`,
     noGamesFor: (color: Color) => `No hay partidas con ${color === 'w' ? 'blancas' : 'negras'} para este jugador.`,
-    notInGames: (move: string) => `No hay partidas con ${move} en esta posición.`,
+    offBook: 'Variante propia: estas jugadas no aparecen en ninguna partida.',
+    backToGames: 'Volver a las partidas',
     first: '⏮ Inicio',
     back: '◀ Atrás',
-    dragHint: 'Podés mover las piezas en el tablero para avanzar.',
+    dragHint: 'Mové las piezas para avanzar. Si la jugada no está en las partidas, se arma una variante propia.',
     start: 'Inicio',
     gamesHere: (n: number) => `${plural(n, 'partida', 'partidas')} en esta posición`,
     score: 'puntaje',
@@ -102,6 +103,22 @@ const es = {
   viewer: {
     round: (r: string) => `Ronda ${r}`,
     keyboardHint: 'También podés usar las flechas ← → del teclado.',
+    analyzing: (i: number, n: number) => `analizadas ${i}/${n}`,
+  },
+  engine: {
+    name: 'Stockfish',
+    loading: 'Cargando motor…',
+    analyzing: 'analizando…',
+    depth: (d: number) => `profundidad ${d}`,
+    error: 'No se pudo iniciar el motor.',
+    best: 'Mejor jugada',
+    lines: 'Líneas',
+    playLine: 'Jugar esta jugada en el tablero',
+    evalCol: 'Eval.',
+    evalTitle: 'Evaluación después de la jugada (+ favorece a blancas)',
+    marks: { inaccuracy: 'Imprecisión', mistake: 'Error', blunder: 'Error grave' },
+    credit: 'Análisis con Stockfish (GPLv3)',
+    source: 'código fuente',
   },
 }
 
@@ -111,7 +128,7 @@ const en: Messages = {
   locale: 'en',
   chessResultsLan: 1,
   app: {
-    title: 'Player repertoire',
+    title: 'Player Openings',
     subtitle: 'Opening tree from Chess-Results PGN files. Everything stays in your browser.',
     storageError: 'Could not open browser storage; collections will not be saved.',
     language: 'Language',
@@ -179,10 +196,11 @@ const en: Messages = {
   explorer: {
     noResult: (n) => `${n} without result`,
     noGamesFor: (color) => `No games as ${color === 'w' ? 'white' : 'black'} for this player.`,
-    notInGames: (move) => `No games with ${move} in this position.`,
+    offBook: 'Your own line: these moves are not in any game.',
+    backToGames: 'Back to the games',
     first: '⏮ Start',
     back: '◀ Back',
-    dragHint: 'You can move the pieces on the board to go forward.',
+    dragHint: 'Move the pieces to go forward. If the move is not in the games, you start your own line.',
     start: 'Start',
     gamesHere: (n) => `${plural(n, 'game', 'games')} in this position`,
     score: 'score',
@@ -202,6 +220,22 @@ const en: Messages = {
   viewer: {
     round: (r) => `Round ${r}`,
     keyboardHint: 'You can also use the ← → arrow keys.',
+    analyzing: (i, n) => `analyzed ${i}/${n}`,
+  },
+  engine: {
+    name: 'Stockfish',
+    loading: 'Loading engine…',
+    analyzing: 'analyzing…',
+    depth: (d) => `depth ${d}`,
+    error: 'Could not start the engine.',
+    best: 'Best move',
+    lines: 'Lines',
+    playLine: 'Play this move on the board',
+    evalCol: 'Eval',
+    evalTitle: 'Evaluation after the move (+ favors white)',
+    marks: { inaccuracy: 'Inaccuracy', mistake: 'Mistake', blunder: 'Blunder' },
+    credit: 'Analysis by Stockfish (GPLv3)',
+    source: 'source code',
   },
 }
 

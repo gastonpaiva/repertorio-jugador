@@ -172,6 +172,15 @@ export default function App() {
             {t.app.donateKofi}
           </a>
         </div>
+        <p className="muted small credit">
+          <a href="https://github.com/official-stockfish/Stockfish" target="_blank" rel="noopener noreferrer">
+            {t.engine.credit}
+          </a>{' '}
+          ·{' '}
+          <a href="https://github.com/gastonpaiva/repertorio-jugador" target="_blank" rel="noopener noreferrer">
+            {t.engine.source}
+          </a>
+        </p>
       </footer>
     </div>
   )
